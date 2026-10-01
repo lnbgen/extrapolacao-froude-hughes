@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extrapolação Hidrodinâmica Modelo-Protótipo (Froude & Hughes) | AP1</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #0f294a;
+      --secondary: #1e4e79;
+      --accent-froude: #2563eb;
+      --accent-hughes: #0d9488;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 50px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0a192f 0%, #1e3a8a 100%);
+      color: white;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      font-size: 1.7rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* Preset Buttons */
+    .presets {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-preset {
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-preset:hover, .btn-preset.active {
+      background-color: var(--secondary);
+      color: white;
+    }
+
+    .btn-action {
+      background-color: var(--accent-froude);
+      color: white;
+    }
+
+    .btn-action:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+
+    .btn-success {
+      background-color: #10b981;
+      color: white;
+    }
+
+    /* Input Grid */
+    .grid-params {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .input-group input, .input-group select {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background-color: #f8fafc;
+      color: var(--text);
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent-froude);
+      background-color: #fff;
+    }
+
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: right;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .th-froude {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    .th-hughes {
+      background-color: #ccfbf1;
+      color: #0f766e;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    td input {
+      width: 80px;
+      padding: 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      text-align: right;
+      font-size: 0.82rem;
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 350px;
+      width: 100%;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-froude {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge-hughes {
+      background-color: #ccfbf1;
+      color: #0f766e;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Aplicativo de Extrapolação Hidrodinâmica Modelo-Protótipo</h1>
+    <p>Avaliação de Desempenho Naval pelos Métodos de Froude e Hughes (ITTC-1957 / ITTC-1978) | Questão 1 da AP1</p>
+  </header>
+
+  <div class="container">
+    
+    <!-- Presets Selector -->
+    <div class="card">
+      <div class="card-title">
+        <span>Carregar Casos Prontos da Literatura</span>
+        <span class="badge badge-froude">Interface Executável Interativa</span>
+      </div>
+      <div class="presets">
+        <button class="btn btn-preset active" onclick="loadPreset('artigo')">1. Barco de Pesca ITU (Aydin & Salci, 2008)</button>
+        <button class="btn btn-preset" onclick="loadPreset('aula')">2. Exercício da Aula AP1 (Professor)</button>
+        <button class="btn btn-preset" onclick="loadPreset('kcs')">3. Porta-Contêineres KCS (KRISO Benchmark)</button>
+      </div>
+    </div>
+
+    <!-- Parameter Inputs -->
+    <div class="card">
+      <div class="card-title">
+        <span>Parâmetros Globais do Modelo e Protótipo</span>
+        <button class="btn btn-success" onclick="calculate()">Recalcular Agora</button>
+      </div>
+      
+      <div class="grid-params">
+        <div class="input-group">
+          <label>Fator de Escala (λ = Ls / Lm)</label>
+          <input type="number" id="inp-lambda" value="10" step="0.1" onchange="updateScale()">
+        </div>
+        <div class="input-group">
+          <label>Gravidade g (m/s²)</label>
+          <input type="number" id="inp-g" value="9.81" step="0.01">
+        </div>
+        <div class="input-group">
+          <label>Fator de Forma de Hughes (1 + k)</label>
+          <input type="number" id="inp-kfactor" value="1.281" step="0.001">
+        </div>
+        <div class="input-group">
+          <label>Comprimento do Modelo Lm (m)</label>
+          <input type="number" id="inp-lm" value="2.857" step="0.001" onchange="updateScale()">
+        </div>
+        <div class="input-group">
+          <label>Área Molhada do Modelo Sm (m²)</label>
+          <input type="number" id="inp-sm" value="1.794" step="0.001" onchange="updateScale()">
+        </div>
+        <div class="input-group">
+          <label>Comprimento do Protótipo Ls (m)</label>
+          <input type="number" id="inp-ls" value="28.57" step="0.01" readonly style="background:#e2e8f0;">
+        </div>
+        <div class="input-group">
+          <label>Área Molhada do Protótipo Ss (m²)</label>
+          <input type="number" id="inp-ss" value="179.4" step="0.1" readonly style="background:#e2e8f0;">
+        </div>
+        <div class="input-group">
+          <label>Densidade Água Modelo ρm (kg/m³)</label>
+          <input type="number" id="inp-rhom" value="998.5986" step="0.1">
+        </div>
+        <div class="input-group">
+          <label>Viscosidade Modelo νm (m²/s)</label>
+          <input type="number" id="inp-num" value="1.0542e-6" step="1e-8">
+        </div>
+        <div class="input-group">
+          <label>Densidade Água Protótipo ρs (kg/m³)</label>
+          <select id="inp-rhos" onchange="calculate()">
+            <option value="998.5986">Água Doce (998.6 kg/m³ - Ensaio Local)</option>
+            <option value="1025.0">Água Salgada Oceânica (1025.0 kg/m³ - Artigo Real)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Viscosidade Protótipo νs (m²/s)</label>
+          <input type="number" id="inp-nus" value="1.0542e-6" step="1e-8">
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>Tabela de Ensaios e Resultados Extrapolados</span>
+        <div>
+          <button class="btn btn-action" onclick="addRow()">+ Adicionar Linha</button>
+          <button class="btn btn-preset" onclick="exportCSV()">Exportar CSV</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table id="main-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Ponto</th>
+              <th rowspan="2">Vm (m/s)</th>
+              <th rowspan="2">RTm (N)</th>
+              <th rowspan="2">Fn (-)</th>
+              <th rowspan="2">Vs (nós)</th>
+              <th rowspan="2">Rnm</th>
+              <th rowspan="2">Rns</th>
+              <th rowspan="2">CFm (×10³)</th>
+              <th rowspan="2">CFs (×10³)</th>
+              <th class="th-froude" colspan="3">MÉTODO DE FROUDE</th>
+              <th class="th-hughes" colspan="3">MÉTODO DE HUGHES (1+k)</th>
+              <th rowspan="2">Δ RT (%)</th>
+              <th rowspan="2">Ações</th>
+            </tr>
+            <tr>
+              <th class="th-froude">CTs (×10³)</th>
+              <th class="th-froude">RTs (kN)</th>
+              <th class="th-froude">PE (kW)</th>
+              <th class="th-hughes">CTs (×10³)</th>
+              <th class="th-hughes">RTs (kN)</th>
+              <th class="th-hughes">PE (kW)</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charts Cards (Folha Separada / Seção de Gráficos) -->
+    <div class="card">
+      <div class="card-title">
+        <span>Visualização Gráfica Interativa</span>
+        <span class="badge badge-hughes">Atualização em Tempo Real</span>
+      </div>
+
+      <div class="charts-grid">
+        <div class="card">
+          <h3 style="font-size:0.95rem; margin-bottom:10px; color:#1e40af;">Resistência Total ao Avanço vs. Velocidade do Navio (Vs)</h3>
+          <div class="chart-container">
+            <canvas id="chart-rt-vs"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:0.95rem; margin-bottom:10px; color:#0f766e;">Potência Efetiva vs. Velocidade do Navio (Vs)</h3>
+          <div class="chart-container">
+            <canvas id="chart-pe-vs"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:0.95rem; margin-bottom:10px; color:#1e40af;">Resistência Total ao Avanço vs. Número de Froude (Fn)</h3>
+          <div class="chart-container">
+            <canvas id="chart-rt-fn"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:0.95rem; margin-bottom:10px; color:#0f766e;">Potência Efetiva vs. Número de Froude (Fn)</h3>
+          <div class="chart-container">
+            <canvas id="chart-pe-fn"></canvas>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+          <h3 style="font-size:0.95rem; margin-bottom:10px; color:#475569;">Decomposição dos Coeficientes Adimensionais (CT, CF, Cw) vs. Fn</h3>
+          <div class="chart-container">
+            <canvas id="chart-coef"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Desenvolvido para a Questão 1 da AP1 | Engenharia Naval | Métodos de Froude e Hughes</p>
+    <p>Baseado no trabalho experimental de Aydin & Salci (2008), ITTC-1957 e ITTC-1978</p>
+  </footer>
+
+  <script>
+    // Presets data
+    const presets = {
+      artigo: {
+        lambda: 10.0, g: 9.81, kfactor: 1.281,
+        lm: 2.857, sm: 1.794, rhom: 998.5986, num: 1.0542e-6,
+        rhos: 998.5986, nus: 1.0542e-6,
+        points: [
+          { vm: 0.25, rtm: 0.348136 },
+          { vm: 0.50, rtm: 1.186605 },
+          { vm: 0.75, rtm: 2.549729 },
+          { vm: 1.00, rtm: 4.550286 },
+          { vm: 1.30, rtm: 7.796287 },
+          { vm: 1.60, rtm: 12.871228 },
+          { vm: 2.00, rtm: 29.910283 }
+        ]
+      },
+      aula: {
+        lambda: 30.0, g: 9.81, kfactor: 1.15,
+        lm: 4.30, sm: 3.75, rhom: 1000.0, num: 1.140e-6,
+        rhos: 1025.0, nus: 1.190e-6,
+        points: [
+          { vm: 0.80, rtm: 5.20 },
+          { vm: 1.00, rtm: 7.87 },
+          { vm: 1.20, rtm: 11.22 },
+          { vm: 1.35, rtm: 14.29 },
+          { vm: 1.50, rtm: 18.00 },
+          { vm: 1.65, rtm: 22.57 },
+          { vm: 1.80, rtm: 28.30 },
+          { vm: 1.95, rtm: 35.58 },
+          { vm: 2.10, rtm: 44.95 }
+        ]
+      },
+      kcs: {
+        lambda: 31.6, g: 9.81, kfactor: 1.10,
+        lm: 7.2786, sm: 9.438, rhom: 1000.0, num: 1.140e-6,
+        rhos: 1025.0, nus: 1.190e-6,
+        points: [
+          { vm: 0.913, rtm: 13.90 },
+          { vm: 1.268, rtm: 26.24 },
+          { vm: 1.648, rtm: 44.52 },
+          { vm: 1.927, rtm: 62.13 },
+          { vm: 2.197, rtm: 82.52 },
+          { vm: 2.383, rtm: 105.74 }
+        ]
+      }
+    };
+
+    let currentPoints = [];
+    let charts = {};
+
+    function initCharts() {
+      const chartConfigs = [
+        { id: 'chart-rt-vs', xLabel: 'Vs (nós)', yLabel: 'RTs (kN)' },
+        { id: 'chart-pe-vs', xLabel: 'Vs (nós)', yLabel: 'PE (kW)' },
+        { id: 'chart-rt-fn', xLabel: 'Fn (-)', yLabel: 'RTs (kN)' },
+        { id: 'chart-pe-fn', xLabel: 'Fn (-)', yLabel: 'PE (kW)' },
+        { id: 'chart-coef', xLabel: 'Fn (-)', yLabel: 'Coeficiente (×10³)' }
+      ];
+
+      chartConfigs.forEach(c => {
+        const ctx = document.getElementById(c.id).getContext('2d');
+        charts[c.id] = new Chart(ctx, {
+          type: 'line',
+          data: { datasets: [] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                type: 'linear',
+                title: { display: true, text: c.xLabel, font: { weight: 'bold' } }
+              },
+              y: {
+                title: { display: true, text: c.yLabel, font: { weight: 'bold' } }
+              }
+            },
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: (${context.parsed.x.toFixed(3)}, ${context.parsed.y.toFixed(2)})`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      });
+    }
+
+    function updateScale() {
+      const lambda = parseFloat(document.getElementById('inp-lambda').value) || 1;
+      const lm = parseFloat(document.getElementById('inp-lm').value) || 1;
+      const sm = parseFloat(document.getElementById('inp-sm').value) || 1;
+      document.getElementById('inp-ls').value = (lm * lambda).toFixed(2);
+      document.getElementById('inp-ss').value = (sm * lambda * lambda).toFixed(2);
+      calculate();
+    }
+
+    function loadPreset(key) {
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const p = presets[key];
+      document.getElementById('inp-lambda').value = p.lambda;
+      document.getElementById('inp-g').value = p.g;
+      document.getElementById('inp-kfactor').value = p.kfactor;
+      document.getElementById('inp-lm').value = p.lm;
+      document.getElementById('inp-sm').value = p.sm;
+      document.getElementById('inp-rhom').value = p.rhom;
+      document.getElementById('inp-num').value = p.num;
+      document.getElementById('inp-rhos').value = p.rhos;
+      document.getElementById('inp-nus').value = p.nus;
+
+      currentPoints = JSON.parse(JSON.stringify(p.points));
+      updateScale();
+    }
+
+    function addRow() {
+      currentPoints.push({ vm: 1.0, rtm: 5.0 });
+      renderTable();
+      calculate();
+    }
+
+    function removeRow(idx) {
+      currentPoints.splice(idx, 1);
+      renderTable();
+      calculate();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+      currentPoints.forEach((pt, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center;">${i + 1}</td>
+          <td><input type="number" step="0.01" value="${pt.vm}" onchange="currentPoints[${i}].vm = parseFloat(this.value); calculate();"></td>
+          <td><input type="number" step="0.0001" value="${pt.rtm}" onchange="currentPoints[${i}].rtm = parseFloat(this.value); calculate();"></td>
+          <td id="res-fn-${i}">-</td>
+          <td id="res-vs-${i}">-</td>
+          <td id="res-rnm-${i}">-</td>
+          <td id="res-rns-${i}">-</td>
+          <td id="res-cfm-${i}">-</td>
+          <td id="res-cfs-${i}">-</td>
+          <td id="res-ctsf-${i}">-</td>
+          <td id="res-rtsf-${i}">-</td>
+          <td id="res-pef-${i}">-</td>
+          <td id="res-ctsh-${i}">-</td>
+          <td id="res-rtsh-${i}">-</td>
+          <td id="res-peh-${i}">-</td>
+          <td id="res-delta-${i}" style="font-weight:600;">-</td>
+          <td style="text-align:center;"><button class="btn btn-danger" onclick="removeRow(${i})">X</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function calculate() {
+      const lambda = parseFloat(document.getElementById('inp-lambda').value);
+      const g = parseFloat(document.getElementById('inp-g').value);
+      const kFactor = parseFloat(document.getElementById('inp-kfactor').value);
+      const lm = parseFloat(document.getElementById('inp-lm').value);
+      const sm = parseFloat(document.getElementById('inp-sm').value);
+      const ls = lm * lambda;
+      const ss = sm * lambda * lambda;
+      const rhom = parseFloat(document.getElementById('inp-rhom').value);
+      const num = parseFloat(document.getElementById('inp-num').value);
+      const rhos = parseFloat(document.getElementById('inp-rhos').value);
+      const nus = parseFloat(document.getElementById('inp-nus').value);
+
+      const calculatedData = [];
+
+      currentPoints.forEach((pt, i) => {
+        const vm = pt.vm;
+        const rtm = pt.rtm;
+
+        const fn = vm / Math.sqrt(g * lm);
+        const vs_ms = vm * Math.sqrt(lambda);
+        const vs_knots = vs_ms * 3.6 / 1.852;
+
+        const rnm = vm * lm / num;
+        const rns = vs_ms * ls / nus;
+
+        const cfm = 0.075 / Math.pow(Math.log10(rnm) - 2, 2);
+        const cfs = 0.075 / Math.pow(Math.log10(rns) - 2, 2);
+
+        const ctm = rtm / (0.5 * rhom * sm * vm * vm);
+
+        // Froude
+        const crm = ctm - cfm;
+        const crs = crm;
+        const cts_f = cfs + crs;
+        const rts_f = (cts_f * 0.5 * rhos * ss * vs_ms * vs_ms) / 1000.0;
+        const pe_f = rts_f * vs_ms;
+
+        // Hughes
+        const cvm = kFactor * cfm;
+        const cwm = ctm - cvm;
+        const cws = cwm;
+        const cvs = kFactor * cfs;
+        const cts_h = cvs + cws;
+        const rts_h = (cts_h * 0.5 * rhos * ss * vs_ms * vs_ms) / 1000.0;
+        const pe_h = rts_h * vs_ms;
+
+        const delta = ((rts_h - rts_f) / rts_f) * 100;
+
+        calculatedData.push({
+          fn, vs_knots, rts_f, pe_f, rts_h, pe_h, ctm, cts_f, cts_h, cfs, cwm, delta
+        });
+
+        // Update table cells
+        document.getElementById(`res-fn-${i}`).innerText = fn.toFixed(4);
+        document.getElementById(`res-vs-${i}`).innerText = vs_knots.toFixed(2);
+        document.getElementById(`res-rnm-${i}`).innerText = rnm.toExponential(2);
+        document.getElementById(`res-rns-${i}`).innerText = rns.toExponential(2);
+        document.getElementById(`res-cfm-${i}`).innerText = (cfm * 1e3).toFixed(3);
+        document.getElementById(`res-cfs-${i}`).innerText = (cfs * 1e3).toFixed(3);
+        document.getElementById(`res-ctsf-${i}`).innerText = (cts_f * 1e3).toFixed(3);
+        document.getElementById(`res-rtsf-${i}`).innerText = rts_f.toFixed(3);
+        document.getElementById(`res-pef-${i}`).innerText = pe_f.toFixed(2);
+        document.getElementById(`res-ctsh-${i}`).innerText = (cts_h * 1e3).toFixed(3);
+        document.getElementById(`res-rtsh-${i}`).innerText = rts_h.toFixed(3);
+        document.getElementById(`res-peh-${i}`).innerText = pe_h.toFixed(2);
+        
+        const deltaElem = document.getElementById(`res-delta-${i}`);
+        deltaElem.innerText = (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+        deltaElem.style.color = delta < 0 ? '#0f766e' : '#b45309';
+      });
+
+      updateChartData(calculatedData);
+    }
+
+    function updateChartData(data) {
+      // Sort data by Fn / Vs
+      data.sort((a, b) => a.fn - b.fn);
+
+      // 1. RT vs Vs
+      charts['chart-rt-vs'].data = {
+        datasets: [
+          {
+            label: 'Método de Froude',
+            data: data.map(d => ({ x: d.vs_knots, y: d.rts_f })),
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+            tension: 0.3
+          },
+          {
+            label: 'Método de Hughes',
+            data: data.map(d => ({ x: d.vs_knots, y: d.rts_h })),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3
+          }
+        ]
+      };
+      charts['chart-rt-vs'].update();
+
+      // 2. PE vs Vs
+      charts['chart-pe-vs'].data = {
+        datasets: [
+          {
+            label: 'Froude (kW)',
+            data: data.map(d => ({ x: d.vs_knots, y: d.pe_f })),
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+            tension: 0.3
+          },
+          {
+            label: 'Hughes (kW)',
+            data: data.map(d => ({ x: d.vs_knots, y: d.pe_h })),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3
+          }
+        ]
+      };
+      charts['chart-pe-vs'].update();
+
+      // 3. RT vs Fn
+      charts['chart-rt-fn'].data = {
+        datasets: [
+          {
+            label: 'Froude (kN)',
+            data: data.map(d => ({ x: d.fn, y: d.rts_f })),
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+            tension: 0.3
+          },
+          {
+            label: 'Hughes (kN)',
+            data: data.map(d => ({ x: d.fn, y: d.rts_h })),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3
+          }
+        ]
+      };
+      charts['chart-rt-fn'].update();
+
+      // 4. PE vs Fn
+      charts['chart-pe-fn'].data = {
+        datasets: [
+          {
+            label: 'Froude (kW)',
+            data: data.map(d => ({ x: d.fn, y: d.pe_f })),
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+            tension: 0.3
+          },
+          {
+            label: 'Hughes (kW)',
+            data: data.map(d => ({ x: d.fn, y: d.pe_h })),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3
+          }
+        ]
+      };
+      charts['chart-pe-fn'].update();
+
+      // 5. Coef vs Fn
+      charts['chart-coef'].data = {
+        datasets: [
+          {
+            label: 'CTm (Modelo)',
+            data: data.map(d => ({ x: d.fn, y: d.ctm * 1e3 })),
+            borderColor: '#dc2626',
+            backgroundColor: '#dc2626',
+            tension: 0.3
+          },
+          {
+            label: 'CTs Froude',
+            data: data.map(d => ({ x: d.fn, y: d.cts_f * 1e3 })),
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+            tension: 0.3
+          },
+          {
+            label: 'CTs Hughes',
+            data: data.map(d => ({ x: d.fn, y: d.cts_h * 1e3 })),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3
+          },
+          {
+            label: 'CFs (Atrito ITTC)',
+            data: data.map(d => ({ x: d.fn, y: d.cfs * 1e3 })),
+            borderColor: '#64748b',
+            backgroundColor: '#64748b',
+            tension: 0.3
+          }
+        ]
+      };
+      charts['chart-coef'].update();
+    }
+
+    function exportCSV() {
+      let csv = 'Ponto,Vm (m/s),RTm (N),Fn,Vs (nos),RTs Froude (kN),PE Froude (kW),RTs Hughes (kN),PE Hughes (kW),Delta RT (%)\n';
+      const rows = document.querySelectorAll('#table-body tr');
+      rows.forEach((tr, i) => {
+        const tds = tr.querySelectorAll('td');
+        const vm = tds[1].querySelector('input').value;
+        const rtm = tds[2].querySelector('input').value;
+        const fn = tds[3].innerText;
+        const vs = tds[4].innerText;
+        const rtsf = tds[10].innerText;
+        const pef = tds[11].innerText;
+        const rtsh = tds[13].innerText;
+        const peh = tds[14].innerText;
+        const delta = tds[15].innerText;
+        csv += `${i+1},${vm},${rtm},${fn},${vs},${rtsf},${pef},${rtsh},${peh},${delta}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'extrapolacao_froude_hughes.csv';
+      a.click();
+    }
+
+    // Init on load
+    window.onload = function() {
+      initCharts();
+      loadPreset('artigo');
+    };
+  </script>
+</body>
+</html>
